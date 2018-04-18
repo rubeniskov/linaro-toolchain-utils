@@ -1,0 +1,11 @@
+aarch64-elf
+aarch64-linux-gnu
+aarch64_be-elf
+aarch64_be-linux-gnu
+arm-eabi
+arm-linux-gnueabi
+arm-linux-gnueabihf
+armeb-eabi
+armeb-linux-gnueabi
+armeb-linux-gnueabihf
+armv8l-linux-gnueabihf
