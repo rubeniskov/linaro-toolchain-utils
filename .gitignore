@@ -1,0 +1,14 @@
+*
+!/.gitignore
+!/constants.sh
+!/common.sh
+!/usage.sh
+!/ls-remote.sh
+!/ls-local.sh
+!/download.sh
+!/install.sh
+!/toolchain
+!/test/
+!/README.md
+!/LICENSE
+!/Makefile
