@@ -10,54 +10,51 @@
 
 source './common.sh'
 
-toolchain_ls_remote_versions(){
-  local cache_file="${TOOLCHAIN_CACHE_DIR}/.toolchain_cache_versions"
-  local time_since_modify=$(toolchain_time_since_modified ${cache_file})
-
-  ([[ $time_since_modify -lt 36000 ]] &&
-      (cat "${cache_file}") ||
-      (curl -s "${TOOLCHAIN_RELEASES_URL}/" |\
-      # OBTAIN VERSIONS
-      sed -n 's/.*href="\/components\/toolchain\/binaries\/\([^"]*\)\/.*/\1/p' |\
-      # FILTER LATEST
-      grep -v latest |\
-      # SORT
-      sort -n |\
-      # SPLIT VERSION AND REVISION
-      sed 's/-/ /' |\
-      # GROUP BY VERSION
-      awk '{arr[$1]=arr[$1]" "$2} END {for (i in arr) {print i,arr[i]}}'|\
-      # CLEAN SPACES
-      sed 's/  / /' |\
-      # SAVE FILE AND GET OUTPUT
-      toolchain_cache_results "${cache_file}")) |\
-      # FILTER BY VERSION
-      ( [[ "${1}" ]] && grep -w "${1}" || cat ) |\
-      # FILTER BY REVISION
-      ( [[ "${2}" ]] && grep -w "${2}" || cat )
+ltu_ls_remote() {
+  ltu_get_remote_toolchains |\
+  ltu_filter_host_arch $* |\
+  ltu_filter_latest $* |\
+  ltu_filter_brief $* |\
+  ltu_filter_grep $*
 }
 
-toolchain_ls_remote_targets(){
-  local version=${1:-"latest"}
-  local revision=${2}
-  if [[ -z $revision ]] && [[ $version != "latest" ]]; then
-      echo "Error revision arguments is required" 
-      return 1
-  fi
-  local cache_file="${TOOLCHAIN_CACHE_DIR}/.toolchain_cache_targets_${version}_${revision}"
-  local time_since_modify=$(toolchain_time_since_modified ${cache_file})
+# ltu_get_remote_versions() {
+#   ltu_log "prg" "Loading remote versions" "ᕙ(ಡ_ಡ)"
+#   ltu_get_from_url -s "${LTU_RELEASES_URL}/" |\
+#   ltu_parse_html_links |\
+#   awk -F"/" '/^\/components\/toolchain\/binaries\//{ print $5 }'|\
+#   ltu_filter_version
+# }
+#
+# ltu_get_remote_targets() {
+#   local version
+#   cat - | while read -r args; do
+#       version=${args[0]:-latest}
+#       ltu_log "prg" "Loading remote targets" "ᕙ(ಠ_ಠ)ᕗ" "${version}"
+#       ltu_get_from_url -s "${LTU_RELEASES_URL}/${version}/" |\
+#       ltu_parse_html_links |\
+#       awk -F"/" -v version=$version '/^\/components\/toolchain\/binaries\/.*\//{ print version" "$6 }'
+#   done
+#
+# }
+#
+# ltu_get_remote_files() {
+#   local version target
+#   cat - | while read -r args; do
+#       version=${args[0]:-latest}
+#       target=${args[1]:-aarch64-elf}
+#       ltu_log "prg" "Loading remote files" "(ಡ_ಡ)ᕗ" "${version} ${target}"
+#       ltu_get_from_url -s "${LTU_RELEASES_URL}/${version}/${target}/" |\
+#       ltu_parse_html_links |\
+#       awk -F"/" -v url_base="${LTU_RELEASES_URL}" '/^\/components\/toolchain\/binaries\/.*\/.*\/gcc.*\.tar.xz$/{ print url_base"/"$5"/"$6"/"$7 }'
+#   done
+# }
 
-  ([[ $time_since_modify -lt 36000 ]] &&
+ltu_get_remote_toolchains() {
+  local cache_file="${LTU_CACHE_DIR}/.ltu_cache_remote"
+  local time_since_modify=$(ltu_time_since_file_modified ${cache_file})
+  ([[ $time_since_modify -lt $((86400 * 7)) ]] &&
       (cat "${cache_file}") ||
-      (curl -s "${TOOLCHAIN_RELEASES_URL}/$([[ -n $revision ]] && echo "${version}-${revision}" || echo "${version}")/" |\
-      # OBTAIN VERSIONS
-      sed -n 's/.*href="\/components\/toolchain\/binaries\/\([^"]*\)\/.*/\1/p' |\
-      # PARSE SPLIT NAME
-      awk 'function basename(file, a, n) {
-            n = split(file, a, "/")
-          return a[n]
-        }
-        {print basename($1)}' |\
-      # SAVE FILE AND GET OUTPUT
-      toolchain_cache_results "${cache_file}"))
+      (ltu_get_from_url -s "https://gist.githubusercontent.com/rubeniskov/d5c04095c41076c4dfe5273015c9a871/raw" | ltu_cache_results "${cache_file}")) |\
+  ltu_parse_toolchain
 }

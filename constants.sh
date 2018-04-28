@@ -8,11 +8,11 @@
 #bash_version:    3.2.57(1)-release
 #==============================================================================
 
-TOOLCHAIN_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-TOOLCHAIN_PATH=${TOOLCHAIN_PATH:="$TOOLCHAIN_DIR"}
-TOOLCHAIN_DEST_DIR=${TOOLCHAIN_DEST_DIR:="$TOOLCHAIN_PATH/toolchains"}
-TOOLCHAIN_CACHE_DIR=${TOOLCHAIN_CACHE_DIR:="$TOOLCHAIN_PATH/cache"}
-TOOLCHAIN_RELEASES_URL=${TOOLCHAIN_RELEASES_URL:="https://releases.linaro.org/components/toolchain/binaries"}
-TOOLCHAIN_GNU_BINARIES=( "getopt" )
-TOOLCHAIN_BASH_BINARIES=( "sort" "awk" "cut" "grep" "cut" "head" "tail")
-TOOLCHAIN_THIRD_PARTY_BINARIES=( "curl" )
+LTU_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+LTU_PATH=${LTU_PATH:="$LTU_DIR"}
+LTU_DEST_DIR=${LTU_DEST_DIR:="$LTU_PATH/toolchains"}
+LTU_CACHE_DIR=${LTU_CACHE_DIR:="$LTU_PATH/cache"}
+LTU_RELEASES_URL=${LTU_RELEASES_URL:="https://releases.linaro.org/components/toolchain/binaries"}
+LTU_GNU_BINARIES=( "getopt" )
+LTU_BASH_BINARIES=( "sort" "awk" "cut" "grep" "cut" "head" "tail")
+LTU_THIRD_PARTY_BINARIES=( "curl" )

@@ -9,30 +9,11 @@
 #==============================================================================
 
 source "./constants.sh"
+source "./utils_filter.sh"
+source "./utils_parser.sh"
+source "./utils_format.sh"
 
-toolchain_search(){
-    curl -s "${TOOLCHAIN_RELEASES_URL}/${1}-${2}/${3}/" |\
-    grep "${1}-${2}" |\
-    grep "${4}_${3}" |\
-    sed -n 's/.*href="\([^"]*\).*/\1/p' |\
-    head -n 1 |\
-    awk '
-      function basename(file, a, n) {
-        n = split(file, a, "/")
-        return a[n]
-      }
-      {print basename($1)}'
-}
-
-toolchain_string_pad(){
-  while [ ${#1} -ne $2 ];
-  do
-    x="${3:- }"$x
-  done
-  echo $x
-}
-
-toolchain_get_platform(){
+ltu_get_platform(){
   unameOut="$(uname -s)"
   case "${unameOut}" in
       Linux*)     platform=Linux;;
@@ -44,96 +25,75 @@ toolchain_get_platform(){
   echo ${platform}
 }
 
-toolchain_get_available_revisions(){
-  cat "${TOOLCHAIN_VERSIONS_FILE}"|\
-      $TOOLCHAIN_CMD_SORT -n|\
-      $TOOLCHAIN_CMD_GREP -w "${1}"|\
-      cut -d ' ' -f 2-|tr " " "\n"
-}
-
-toolchain_get_latest_revision(){
-  toolchain_get_available_revisions $1|\
-      $TOOLCHAIN_CMD_TAIL -n 1
-}
-
-toolchain_get_available_versions(){
-  cat "${TOOLCHAIN_VERSIONS_FILE}"|\
-      $TOOLCHAIN_CMD_SORT -n|\
-      $TOOLCHAIN_CMD_AWK '{print $1}'
-}
-
-toolchain_get_latest_version(){
-  toolchain_get_available_versions|\
-      $TOOLCHAIN_CMD_TAIL -n 1
-}
-
-toolchain_get_available_arch_types(){
-  cat "${TOOLCHAIN_ARCH_TYPES_FILE}"|\
-      $TOOLCHAIN_CMD_SORT -n|\
-      $TOOLCHAIN_CMD_AWK '{print $1}'
-}
-
-toolchain_get_default_arch_type(){
-  toolchain_get_available_arch_types|\
-      $TOOLCHAIN_CMD_GREP "linux-gnu"|\
-      $TOOLCHAIN_CMD_HEAD -n 1
-}
-
-
+ESC_SEQ="\x1b["
+COL_RESET=$ESC_SEQ"39;49;00m"
+COL_RED=$ESC_SEQ"31;01m"
+COL_GREEN=$ESC_SEQ"32;01m"
+COL_YELLOW=$ESC_SEQ"33;01m"
+COL_BLUE=$ESC_SEQ"34;01m"
+COL_MAGENTA=$ESC_SEQ"35;01m"
+COL_CYAN=$ESC_SEQ"36;01m"
 
 #toolchain_get_available_revisions 5.1
 #toolchain_get_latest_revision 5.1
 #exit 1
-toolchain_display_alert()
-#--------------------------------------------------------------------------------------------------------------------------------
-# Let's have unique way of displaying alerts
-#--------------------------------------------------------------------------------------------------------------------------------
-{
+ltu_log() {
+  local ret
+  local label=$1
+  local color=$COL_GREEN
+  local msg=$2
+  local detail=$3
+  local cols=$(tput cols)
+  case $1 in
+    err)
+      label="error"
+      color=$COL_RED
+      ;;
+    prg)
+      ret=1
+      label=$3
+      detail=$4
+      ;;
+    wrn)
+      label="warn"
+      color=$COL_YELLOW
+      ;;
+    info)
+      label="o.k."
+      ;;
+    *)
+      label="..."
+      msg="$1"
+      detail="$2"
+      ;;
+  esac
+
+  msg="[ $color$(printf "%5s" $label)$COL_RESET ] $msg"
+
+  if [[ -n "$detail" ]]; then
+    #msg="$msg ( $COL_BLUE${detail:0:$(($cols-${#msg}))}$COL_RESET )"
+    msg="$msg ( $COL_BLUE$detail$COL_RESET )"
+  fi
+
+  # msg="$msg"
+  echo -en >&2 "$(printf '%*s\n' "${COLUMNS:-$(($cols))}" '')\r"
+  if [[ -n $ret ]]; then
+    echo -en >&2 "$msg\r"
+  else
+    echo -e >&2 "$msg"
+  fi
+
+
   # log function parameters to install.log
-  [[ -n $DEST ]] && echo "Displaying message: $@" >> $DEST/debug/output.log
-
-  local tmp=""
-  [[ -n $2 ]] && tmp="[\e[0;33m $2 \x1B[0m]"
-
-  case $3 in
-  err)
-  printf "[\e[0;31m error \x1B[0m] $1 $tmp\n"
-  ;;
-
-  wrn)
-  printf "[\e[0;35m warn \x1B[0m] $1 $tmp\n"
-  ;;
-
-  ext)
-  printf "[\e[0;32m o.k. \x1B[0m] \e[1;32m$1\x1B[0m $tmp\n"
-  ;;
-
-  info)
-  printf "[\e[0;32m o.k. \x1B[0m] $1 $tmp\n"
-  ;;
-
-  *)
-  printf "[\e[0;32m .... \x1B[0m] $1 $tmp\n"
-  ;;
-  esac
+  #[[ -n $DEST ]] && echo "Displaying message: $@" >> $DEST/debug/output.log
 }
 
 
-toolchain_exec(){
-  case "$(toolchain_get_platform)" in
-      Linux*)
-        exec "${1}" ${@:2}
-      ;;
-      Mac)
-        if [ $(toolchain_check_command brew) ]; then
-            local cmd_prefix=$(brew --prefix "${1}" 2>/dev/null||brew --prefix "gnu-${1}" 2>/dev/null)
-            exec "$cmd_prefix/bin/${1}" ${@:2}
-        fi
-      ;;
-  esac
+ltu_exec(){
+  $(ltu_find_command $1) "${@:2}"
 }
 
-toolchain_check_command(){
+ltu_check_command(){
   echo $1
   command -v "${1}" >/dev/null 2>&1 || {
       toolchain_display_alert "Missing command or not installed Aborting." "${1}" "wrn";
@@ -143,75 +103,42 @@ toolchain_check_command(){
   return 0
 }
 
-toolchain_find_command(){
+ltu_find_command(){
     local cmd_path
-    case "$(toolchain_get_platform)" in
+    local cmd_name="${1}"
+    local cmd_stored_path=$(echo $LTU_CMD_STORE|tr ' ' '\n'|grep "${cmd_name}:"|awk -F':' '{print $2}'|head -n 1)
+    if [ -n "$cmd_stored_path" ]; then
+        echo $cmd_stored_path
+        return 0
+    fi
+    case "$(ltu_get_platform)" in
         Linux*)
           cmd_path=$(which $1)
         ;;
         Mac)
-          if [ $(toolchain_check_command brew) ]; then
-              cmd_path=$(brew --prefix "gnu-${1}" 2>/dev/null||brew --prefix "${1}" 2>/dev/null)
-              if [ $cmd_path ] && [ -f "${cmd_path}/bin/${1}" ]; then
-                  cmd_path="${cmd_path}/bin/${1}"
+          if [ $(ltu_check_command brew) ]; then
+              cmd_path=$(brew --prefix "gnu-${cmd_name}" 2>/dev/null||brew --prefix "${cmd_name}" 2>/dev/null)
+              if [ $cmd_path ] && [ -f "${cmd_path}/bin/${cmd_name}" ]; then
+                  cmd_path="${cmd_path}/bin/${cmd_name}"
               else
-                  cmd_path=$(which ${1})
+                  cmd_path=$(which ${cmd_name})
               fi
           fi
         ;;
     esac
+
     if [ -z $cmd_path ]; then
-        toolchain_display_alert "Command not found" "$1" "wrn"
+        toolchain_display_alert "Command not found" "${cmd_name}" "wrn"
         return 1
     fi
+
+    LTU_CMD_STORE="$LTU_CMD_STORE $cmd_name:$cmd_path"
+
     echo $cmd_path
+    return 0
 }
 
-toolchain_bind_gnu_commands(){
-  local cmd
-  for cmd in "${TOOLCHAIN_GNU_COMMANDS[@]}"
-  do
-    eval "TOOLCHAIN_CMD_$(echo $cmd | awk '{print toupper($0)}')=$(toolchain_find_command $cmd)"
-  done
-
-  for cmd in "${TOOLCHAIN_THIRD_COMMANDS[@]}"
-  do
-    eval "TOOLCHAIN_CMD_$(echo $cmd | awk '{print toupper($0)}')=$(toolchain_find_command $cmd)"
-  done
-
-  for cmd in "${TOOLCHAIN_BASE_COMMANDS[@]}"
-  do
-    eval "TOOLCHAIN_CMD_$(echo $cmd | awk '{print toupper($0)}')=$(which $cmd)"
-  done
-}
-
-toolchain_version(){
-    printf "\nToolchain linaro utility 0.0.1\n\n"
-}
-
-toolchain_available_versions(){
-    if [ "$1" = "-q" ]; then
-        toolchain_get_available_versions
-    else
-cat <<EOF
-    Versions
-$(toolchain_get_available_versions|awk '{print "\t - "$0}')
-EOF
-    fi
-}
-
-toolchain_available_arch_types(){
-    if [ "$1" = "-q" ]; then
-        toolchain_get_available_arch_types
-    else
-cat <<EOF
-    Arch Types
-$(toolchain_get_available_arch_types|awk '{print "\t - "$0}')
-EOF
-    fi
-}
-
-toolchain_time_since_modified(){
+ltu_time_since_file_modified(){
   if [ -f "${1}" ]; then
       echo "$(($(date +%s) - $(date -r "${1}" +"%s")))"
   else
@@ -219,27 +146,7 @@ toolchain_time_since_modified(){
   fi
 }
 
-toolchain_ls_remote(){
-  toolchain_get_remote_versions | \
-  ( [[ "${1}" ]] && grep -w "${1}" || cat ) |
-  awk 'BEGIN  { nores=1;
-                printf "|%-10s|%s|\n", "----------", "-------------------------------"
-                printf "|%8s  | %-30s|\n", "Version", "Revision"
-                printf "|%-10s|%s|\n", "----------", "-------------------------------" }
-      END     { if (nores) printf "| %-41s|\n", "No Results";
-                printf "|%-10s|%s|\n", "----------", "-------------------------------" }
-              { printf "|%9.5s |", $1; $1 = ""; printf "%-30.30s |\n", $0; nores=0}'
-}
-
-toolchain_ls_targets(){
-  toolchain_get_remote_versions | awk \
-  'BEGIN { printf "%-10s\n", "Target", "Revision"
-           printf "%-10s\n", "----------", "--------------" }
-         { printf "%-10s|", $1; $1 = ""; printf "%s\n", $0}'
-}
-
-
-toolchain_cache_results(){
+ltu_cache_results(){
     if [ -n "${1}" ]; then
         if [ ! $(mkdir -p "$(dirname $cache_file)") ]; then
             cat - > $cache_file
@@ -248,9 +155,16 @@ toolchain_cache_results(){
     cat $cache_file
 }
 
-toolchain_bind_gnu_commands
-
-function toolchain_cleanup {
-  rm -f "$DIR/.toolchain_cache_versions" "$DIR/.toolchain_cache_targets_*"
+ltu_get_from_url(){
+    ltu_exec curl \
+      --header "User-Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_10_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/44.0.2403.89 Safari/537.36" \
+      $*
 }
-trap toolchain_cleanup EXIT
+
+ltu_each() {
+  while read -r args; do
+    while read -r res; do
+        echo "$args"|awk -v res="$res" '{print $0" "res}'
+    done <<< "$($* $args)"
+  done
+}

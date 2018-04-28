@@ -10,40 +10,20 @@
 
 source './common.sh'
 
-#output:
-# 6.1.1 2016.08 x86_64 aarch64-linux-gnu
-# 6.2.1 2016.11 x86_64 aarch64-linux-gnu
-toolchain_ls_local(){
-  ls $TOOLCHAIN_DEST_DIR|\
-    sed s/gcc-linaro-// |\
-    awk -F- '{split($3"-"$4"-"$5,a,"_"); printf "%s %s %s_%s %s\n",$1,$2,a[1],a[2],a[3]}'
+ltu_ls_local(){
+  ltu_get_local_toolchains |\
+  ltu_filter_host_arch $* |\
+  ltu_filter_latest $* |\
+  ltu_filter_brief $* |\
+  ltu_filter_grep $*
 }
 
-
-toolchain_ls_local_versions(){
-  toolchain_ls_local |\
-    awk '{printf "%s %s\n",$1,$2}' |\
-    # SORT
-    sort -n |\
-    # GROUP BY VERSION
-    awk '{arr[$1]=arr[$1]" "$2} END {for (i in arr) {print i,arr[i]}}' |\
-    # CLEAN SPACES
-    sed 's/  / /' |\
-    # FILTER BY VERSION
-    ( [[ "${1}" ]] && grep -w "${1}" || cat ) |\
-    # FILTER BY REVISION
-    ( [[ "${2}" ]] && grep -w "${2}" || cat )
+ltu_get_local_files() {
+  ls $LTU_DEST_DIR |\
+  awk -v base_uri=$LTU_DEST_DIR '{print base_uri"/"$0}'
 }
 
-toolchain_ls_local_targets(){
-  if [[ -z $1 ]]; then
-      echo "Error version arguments is required"
-      return 1
-  fi
-  toolchain_ls_local |\
-    # FILTER BY VERSION
-    grep -w "${1}" |\
-    # FILTER BY REVISION
-    ( [[ "${2}" ]] && grep -w "${2}" || cat ) |\
-    awk '{print $4}'
+ltu_get_local_toolchains(){
+  ltu_get_local_files |\
+  ltu_parse_toolchain
 }
