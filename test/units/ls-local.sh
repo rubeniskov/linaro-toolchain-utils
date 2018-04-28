@@ -5,19 +5,19 @@ source './ls-local.sh'
 describe "Toolchain ls local"
 
     test "Check local toolchains"
-        assert_file toolchain_ls_local
-        assert_file toolchain_ls_local 4.9
-        assert_file toolchain_ls_local 6.1 2016.08
-        assert_file toolchain_ls_local 5.3 DUMMY
+        assert_file ltu_ls_local
+        assert_file ltu_ls_local 4.9
+        assert_file ltu_ls_local 6.1 2016.08
+        assert_file ltu_ls_local 5.3 DUMMY
 
-    test "Check local versions"
-        assert_file toolchain_ls_local_versions
-        assert_file toolchain_ls_local_versions 4.9
-        assert_file toolchain_ls_local_versions 6.1 2016.08
-        assert_file toolchain_ls_local_versions 5.3 DUMMY
+    test "Check local option --latest"
+        assert_file ltu_ls_local --latest
+        assert_file ltu_ls_local --latest 4.9
+        assert_file ltu_ls_local --latest 6.1 2016.08
+        assert_file ltu_ls_local --latest 5.3 DUMMY
 
-    test "Check local targets"
-        assert_file toolchain_ls_local_targets
-        assert_file toolchain_ls_local_targets 4.9
-        assert_file toolchain_ls_local_targets 6.1 2016.08
-        assert_file toolchain_ls_local_targets DUMMY
+    test "Check local option --brief"
+        assert_file ltu_ls_local --brief
+        assert_file ltu_ls_local --brief 4.9
+        assert_file ltu_ls_local --brief 6.1 2016.08
+        assert_file ltu_ls_local --brief DUMMY

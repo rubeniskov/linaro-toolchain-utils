@@ -1,9 +1,9 @@
 
 TEST_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-TEST_MODE_RECORD=${TEST_MODE_RECORD:-1}
-TEST_MODE_OUTPUT=${TEST_MODE_OUTPUT:-2}
+TEST_MODE_RECORD=1
+TEST_MODE_OUTPUT=2
 # TEST_MODE=$(($TEST_MODE_RECORD|$TEST_MODE_OUTPUT))
-TEST_MODE=$((0))
+TEST_MODE=${TEST_MODE:=0}
 
 record_assert_file(){
     mkdir -p  "${TEST_DIR}/asserts" && $(echo $@) > "${TEST_DIR}/asserts/$(echo "$@" | sed 's/ /_/g')"
