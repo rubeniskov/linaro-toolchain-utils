@@ -19,7 +19,7 @@ ltu_ls_local(){
 }
 
 ltu_get_local_files() {
-  ls $LTU_DEST_DIR |\
+  mkdir -p $LTU_DEST_DIR && ls $LTU_DEST_DIR |\
   awk -v base_uri=$LTU_DEST_DIR '{print base_uri"/"$0}'
 }
 
