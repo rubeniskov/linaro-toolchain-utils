@@ -35,7 +35,7 @@ create_release_links_file:
 		$(foreach DEPTH_LEVEL, 1 1 1, \
 				xargs -n 1 -P $(WGET_PARALLEL_CORES) \
 						wget $(WGET_FLAGS) --level=$(DEPTH_LEVEL) 2>&1 | $(WGET_PIPELINE) | ) \
-		grep --line-buffered 'gcc-.*\.tar\.xz$$' | uniq | tee /dev/tty | sort > $(TOOLCHAIN_RELEASE_LINKS_FILENAME) \
+		grep --line-buffered 'gcc-.*\.tar\.xz$$' | uniq | sort > $(TOOLCHAIN_RELEASE_LINKS_FILENAME) \
 		&& echo "Collect links took $$(($$(date +%s)-timestamp)) seconds"
 
 publish_release_links_file:
