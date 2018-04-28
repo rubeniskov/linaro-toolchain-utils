@@ -3,9 +3,12 @@
 !/constants.sh
 !/common.sh
 !/usage.sh
-!/ls-remote.sh
-!/ls-local.sh
+!/ls*.sh
+!/ltu
 !/download.sh
+!/utils_*.sh
+!/use.sh
+!/unpack.sh
 !/install.sh
 !/toolchain
 !/test/
