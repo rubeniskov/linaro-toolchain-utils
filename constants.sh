@@ -12,7 +12,7 @@ LTU_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LTU_PATH=${LTU_PATH:="$LTU_DIR"}
 LTU_DEST_DIR=${LTU_DEST_DIR:="$LTU_PATH/toolchains"}
 LTU_CACHE_DIR=${LTU_CACHE_DIR:="$LTU_PATH/cache"}
-LTU_RELEASES_URL=${LTU_RELEASES_URL:="https://releases.linaro.org/components/toolchain/binaries"}
+LTU_RELEASE_LINKS_URL=${LTU_RELEASE_LINKS_URL:="https://gist.githubusercontent.com/rubeniskov/d5c04095c41076c4dfe5273015c9a871/raw"}
 LTU_GNU_BINARIES=( "getopt" )
 LTU_BASH_BINARIES=( "sort" "awk" "cut" "grep" "cut" "head" "tail")
 LTU_THIRD_PARTY_BINARIES=( "curl" )

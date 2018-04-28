@@ -1,13 +1,19 @@
 SHELL = /usr/bin/env bash
 TEST_UNITS ?= $(wildcard test/units/*.sh)
-TOOLCHAIN_RELEASE_URL = http://releases.linaro.org/components/toolchain/binaries/
-TOOLCHAIN_RELEASE_LINKS_FILENAME ?= linaro_toolchain_release_links
-TOOLCHAIN_GIST_HASH ?= d5c04095c41076c4dfe5273015c9a871
-TOOLCHAIN_GIST_DESCRIPTION ?= Linaro Toolchain Releases Download URLs
+
+RELEASE_LINKS_FILENAME ?= linaro_toolchain_release_links
+GIST_RELEASE_LINKS_HASH ?= d5c04095c41076c4dfe5273015c9a871
+GIST_RELEASE_LINKS_DESCRIPTION ?= Linaro Toolchain Releases Download URLs
+
+STANDALONE_FILENAME ?= ltu
+GIST_STANDALONE_HASH ?= 79c6f105b4ab472472bdcbcb3bd7fde6
+GIST_STANDALONE_DESCRIPTION ?= Linaro Toolchain Utils Standalone
+
+WGET_TOOLCHAIN_RELEASE_URL = http://releases.linaro.org/components/toolchain/binaries/
 WGET_PARALLEL_CORES ?= $(shell echo $$(($$(nproc 2>/dev/null|| sysctl -n hw.physicalcpu) * 32)))
 WGET_FLAGS = \
 		--delete-after \
-		--domains="$(shell echo '$(TOOLCHAIN_RELEASE_URL)'|awk -F/ '{print $$3}')" \
+		--domains="$(shell echo '$(WGET_TOOLCHAIN_RELEASE_URL)'|awk -F/ '{print $$3}')" \
 		--spider \
 		--reject="css,js,jpg,jpeg,png,gif" \
 		--force-html \
@@ -25,38 +31,48 @@ test:
 			$$(pwd)/$$TEST_UNIT;  \
 		done
 
-deploy: deploy_release_links_file
+deploy: create_release_links_file publish_release_links_file create_standalone publish_standalone
 
-deploy_release_links_file: create_release_links_file publish_release_links_file
+create_standalone:
+		@timestamp=$$(date +%s) && \
+		echo "$(STANDALONE_FILENAME).sh"|awk -f ./scripts/concat.awk | tee "$(STANDALONE_FILENAME)" | bash -s help >/dev/null \
+		&& chmod 755 "$(STANDALONE_FILENAME)" \
+		&& echo "Build main file took $$(($$(date +%s)-timestamp)) seconds"
 
 create_release_links_file:
 		@timestamp=$$(date +%s) && \
-		echo "$(TOOLCHAIN_RELEASE_URL)" |\
+		echo "$(WGET_TOOLCHAIN_RELEASE_URL)" |\
 		$(foreach DEPTH_LEVEL, 1 1 1, \
 				xargs -n 1 -P $(WGET_PARALLEL_CORES) \
 						wget $(WGET_FLAGS) --level=$(DEPTH_LEVEL) 2>&1 | $(WGET_PIPELINE) | ) \
-		grep --line-buffered 'gcc-.*\.tar\.xz$$' | uniq | sort > $(TOOLCHAIN_RELEASE_LINKS_FILENAME) \
+		grep --line-buffered 'gcc-.*\.tar\.xz$$' | sort -u | tee $(GIST_RELEASE_LINKS_FILENAME) | wc -l \
 		&& echo "Collect links took $$(($$(date +%s)-timestamp)) seconds"
+
+publish_standalone:
+ifeq ($(CREATE_GIST_TOKEN),)
+		$(error CREATE_GIST_TOKEN is undefined)
+else
+		@cat $(STANDALONE_FILENAME) |\
+		awk -v description="$(GIST_STANDALONE_DESCRIPTION)" \
+				-v filename="$(STANDALONE_FILENAME)" \
+				-f ./scripts/json-gist.awk |\
+		curl 'https://api.github.com/gists/$(GIST_STANDALONE_HASH)?access_token=$(CREATE_GIST_TOKEN)' \
+		--request POST \
+		--header "Content-Type: application/json" \
+		--data @- 2>/dev/null |\
+		grep 'raw_url' |\
+		awk -F'"' '{print "remote_url "$$4}'
+endif
 
 publish_release_links_file:
 ifeq ($(CREATE_GIST_TOKEN),)
 		$(error CREATE_GIST_TOKEN is undefined)
 else
-		@cat $(TOOLCHAIN_RELEASE_LINKS_FILENAME) | awk '\
-		BEGIN { \
-			ORS = "";\
-			print("{"); \
-			printf("\"description\": \"%s\",", "$(TOOLCHAIN_GIST_DESCRIPTION)");\
-			printf("\"public\": %s,", "true");\
-			print("\"files\": {");\
-			printf("\"%s\": {", "$(TOOLCHAIN_RELEASE_LINKS_FILENAME)");\
-			print("\"content\": \"");\
-		} { \
-			printf("%s\\n", $$0);\
-		} END { \
-			print("\"}}}");\
-		}' |\
-		curl 'https://api.github.com/gists/$(TOOLCHAIN_GIST_HASH)?access_token=$(CREATE_GIST_TOKEN)' \
+		@cat $(RELEASE_LINKS_FILENAME) |\
+		awk -v description="$(GIST_RELEASE_LINKS_DESCRIPTION)" \
+				-v filename="$(RELEASE_LINKS_FILENAME)" \
+				-f ./scripts/json-gist.awk |\
+		curl 'https://api.github.com/gists/$(GIST_RELEASE_LINKS_HASH)?access_token=$(CREATE_GIST_TOKEN)' \
 		--request POST \
 		--header "Content-Type: application/json" \
 		--data @- 2>/dev/null |\

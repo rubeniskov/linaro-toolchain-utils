@@ -4,7 +4,7 @@
 !/common.sh
 !/usage.sh
 !/ls*.sh
-!/ltu
+!/ltu.sh
 !/download.sh
 !/utils_*.sh
 !/use.sh
@@ -12,6 +12,7 @@
 !/install.sh
 !/toolchain
 !/test/
+!/scripts/
 !/test/**
 !/README.md
 !/LICENSE
