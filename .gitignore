@@ -12,6 +12,7 @@
 !/install.sh
 !/toolchain
 !/test/
+!/test/**
 !/README.md
 !/LICENSE
 !/Makefile
