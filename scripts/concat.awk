@@ -1,7 +1,7 @@
 #!/usr/bin/env awk
 
-function read_file_content(file){
-    while ("cat "file | getline){
+function read_file_content(file) {
+    while ("cat "file | getline) {
         if ( $0 ~ /source/ ) {
             print parse_bash_source($0)
         # remove comments and hashbangs
@@ -25,6 +25,7 @@ function parse_bash_source(line){
 
 BEGIN {
     print "#!/usr/bin/env bash"
+    printf("VERSION=\"%s\"\n", version)
 }
 {
     read_file_content($0)
