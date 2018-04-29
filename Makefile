@@ -1,6 +1,7 @@
 SHELL = /usr/bin/env bash
 TEST_UNITS ?= $(wildcard test/units/*.sh)
 
+VERSION ?=
 RELEASE_LINKS_FILENAME ?= linaro_toolchain_release_links
 GIST_RELEASE_LINKS_HASH ?= d5c04095c41076c4dfe5273015c9a871
 GIST_RELEASE_LINKS_DESCRIPTION ?= Linaro Toolchain Releases Download URLs
@@ -35,7 +36,7 @@ deploy: create_release_links_file publish_release_links_file create_standalone p
 
 create_standalone:
 		@timestamp=$$(date +%s) && \
-		echo "$(STANDALONE_FILENAME).sh"|awk -f ./scripts/concat.awk | tee "$(STANDALONE_FILENAME)" | bash -s help >/dev/null \
+		echo "$(STANDALONE_FILENAME).sh"|awk -v version="$(VERSION)" -f ./scripts/concat.awk | tee "$(STANDALONE_FILENAME)" | bash -s help >/dev/null \
 		&& chmod 755 "$(STANDALONE_FILENAME)" \
 		&& echo "Build main file took $$(($$(date +%s)-timestamp)) seconds"
 

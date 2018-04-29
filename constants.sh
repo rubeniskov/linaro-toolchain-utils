@@ -8,6 +8,7 @@
 #bash_version:    3.2.57(1)-release
 #==============================================================================
 
+LTU_VERSION=${VERSION:="TESTING"}
 LTU_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 LTU_PATH=${LTU_PATH:="$LTU_DIR"}
 LTU_DEST_DIR=${LTU_DEST_DIR:="$LTU_PATH/toolchains"}

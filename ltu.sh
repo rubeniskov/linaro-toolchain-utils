@@ -13,13 +13,15 @@ ltu_usage() {
   local app_name=$(basename $0)
 cat <<EOF
 Usage: $app_name [install|use|ls|ls-remote...] <options>
+  Version
+    $LTU_VERSION
 
   Example
     $app_name install 7.2 elf
     $app_name use 7.2 elf
 
   Commands
-    $app_name install <version/s>       Extract and install toolchain
+    $app_name i/install <version/s>       Extract and install toolchain
     $app_name uninstall <version/s>     Uninstall a version
     $app_name use <version> [<target>]  Modify the enviroment vars to use <version>.
     $app_name which <version>           Display path to installed toolchain version.
@@ -66,7 +68,7 @@ ltu() {
         ltu_use $@
         ;;
     --version)
-        #toolchain_version
+        echo $LTU_VERSION
         ;;
     -h|--help|help|?|*)
         ltu_usage

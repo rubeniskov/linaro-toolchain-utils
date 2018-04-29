@@ -7,7 +7,7 @@ env:
     secure: NXsNB47D3VwZAE3JCon+b34GjadjBj27dcZNvkjRW66LSaXayKEayhrXY6vTAOnwPn7VFk6PAH3y/0OizWBC1yasmXcTVVomeB3JzGM7W5LooZBlUuwWyG6WuRCOyg89wHpyJAzEpHwzbBiJT0/jxgZm0z6ExNFyhBq5d286/zupIzTInv3cI0rvMzTJ/d8g5axuZe4fy88A2slGfxhol9YZf5ebmFcLrKdlt7z658vW8zv6Sf0seQHf65H3Qq1B4BapWF6b8OIR+gZYRrfhPak9wb6GPGfMyPknBMI8x/XqlZpd0dXivkh9P432tSBwXA/acbcecEUgNlpwHN4fOhEShkcADxJccsS82lswSdcRIRrxz08y52jtp3FeFcz/jyr2MdMCTRh+8wfwgApQfyP3AcYtwA9MuR7bGdduNaMiGRFugttbRpvJHFpPuUCx7zvtU0aXG/0ELr6J90ZmXB+FmKGx+tYOjpyDBYjBctStxW4Hw18lZjyRQctwhHOXiNlL4O7siCMkg9lkuJi2HjrWmen6ZWZqLI5tZD8uzXSALQfHMRY0F3as0olPGy+ERJXoywRDkm25g238kJJ8xod9Qc4Xv3GAc4kZarGqvUpGb2xPzt9InK8n0ChTyEmFX+QGGwmOhPY9fKvXlL37JBYpbUJgVnhwWXbIwYDWTW0=
 deploy:
   provider: script
-  script: bash make deploy
+  script: make deploy VERSION="$TRAVIS_TAG"
   on:
     tags: true
     all_branches: false
